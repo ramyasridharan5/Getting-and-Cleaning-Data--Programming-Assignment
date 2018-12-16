@@ -49,7 +49,6 @@ colnames(test)[1] <- "Subject"
 colnames(test)[2] <- "ActivityDescription"
 
 #writing to a file
-write.csv(test,"tidy_data.csv")
 write.table(test,"tidy_data.txt",row.name=FALSE)
 
 
