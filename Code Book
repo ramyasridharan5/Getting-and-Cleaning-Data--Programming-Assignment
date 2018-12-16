@@ -1,0 +1,84 @@
+Code Book for Programming Assignment Week 4 - Getting and Cleaning Data 
+-Prepared by Ramya Sridharan
+
+Background and Raw Data:
+
+The raw data set is from UCI HAR Dataset. The data linked to this project is to represent data collected from the accelerometers from the Samsung Galaxy S smartphone. 
+
+A full description is available at the site where the data was obtained:
+http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
+
+Here are the data for the project:
+https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
+
+The following steps have been performed to clean the raw data set.
+
+1. Downloading and reading all required files into R
+
+setwd("/Users/home/UCI HAR Dataset")
+features <- read.table("features.txt") ## 561 obs. of  2 variables
+x_test<-read.table("test/X_test.txt") ## 2947 obs. of  561 variables V1, V2 etc
+x_train<-read.table("train/X_train.txt") ## 7352 obs. of  561 variables V1, V2 etc
+x_subject_test<-read.table("test/subject_test.txt") 
+x_subject_train<-read.table("train/subject_train.txt") 
+colnames(x_subject_test) <- c("Subject")
+colnames(x_subject_train) <- c("Subject")
+y_test<-read.table("test/y_test.txt")
+y_train<-read.table("train/y_train.txt")
+
+2. Extracting only variables with mean() or std() and extracting their respective feature names
+
+row <- grep("mean()", features$"V2")
+row1 <- grep("std()", features$"V2")
+rows <- append(row,row1, after=length(row)) ## column numbers with mean() or std()
+rows <- sort(rows)
+feature_names <- features[rows,] ##extracting feature names
+
+3. Extracting Activity Label and Activity Description and merging the data
+
+activityLabel <- read.table("activity_labels.txt")
+y_activity_test<- merge(y_test, activityLabel, by.x=1)
+colnames(y_activity_test) <- c("ActivityLabel", "ActivityDescription")
+y_activity_train<- merge(y_train, activityLabel, by.x=1)
+colnames(y_activity_train) <- c("ActivityLabel", "ActivityDescription")
+
+4. Merging the training and the test sets to create one data set.
+
+xtest_new <- x_test[,rows] ## x_test with only colums containing mean()orstd() 2947 obs. of  79 variables
+colnames(xtest_new) <- feature_names$"V2"
+
+xtrain_new <- x_train[,rows] ## x_train with only colums containing mean()orstd() 7352 obs. of  79 variables
+colnames(xtrain_new) <- feature_names$"V2"
+
+x_test_data <- cbind(x_subject_test,y_activity_test, xtest_new) ##combine subject data to X test data
+x_train_data <- cbind(x_subject_train, y_activity_train, xtrain_new) ##combine subject data to X train data
+
+final_data <- rbind(x_test_data, x_train_data) ## 10299 obs, 80 Variables combine all rows of xtest and xtrain data
+
+5. Renaming the variable column names to better represent the data
+
+##renaming col names
+names(final_data)<-gsub("^t", "time", names(final_data))
+names(final_data)<-gsub("^f", "frequency", names(final_data))
+names(final_data)<-gsub("Acc", "Accelerometer", names(final_data))
+names(final_data)<-gsub("Gyro", "Gyroscope", names(final_data))
+names(final_data)<-gsub("Mag", "Magnitude", names(final_data))
+names(final_data)<-gsub("BodyBody", "Body", names(final_data))
+names(final_data)<-gsub("std()", "SD()", names(final_data))
+
+
+6. Final data after merging the datasets and cleaning 
+
+f_data<-final_data[-2]
+
+7. Grouping data based on the Subject and ActivityDesctription and finding mean of variables
+
+test<-aggregate(f_data[, 3:81], list(f_data$Subject,f_data$ActivityDescription), mean)
+colnames(test)[1] <- "Subject"
+colnames(test)[2] <- "ActivityDescription"
+
+8. Writing final tidy dat set to a file
+
+write.table(test,"tidy_data.txt",row.name=FALSE)
+
+
